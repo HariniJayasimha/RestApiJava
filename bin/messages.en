@@ -1,0 +1,34 @@
+title = GovsPlay
+# General messages
+invalid.json.request = Invalid JSON request!
+json.parse.error = JSON parse error!
+json.processing.error = JSON processing error!
+json.mapping.error = JSON mapping error!
+io.error = IO Error!
+db.error = DB Error!
+number.format.error = Number Format Exception!
+connection.error = Connection Error!
+invalid.api.call = Invalid API call!
+api.token.invalid = API token invalid!
+invalid.content.type = Invalid Content Type!
+technical.error = Technical Error!
+session.invalid = Invalid session token!
+invalid.input = Invalid Input!
+field.missing = Field Missing! 
+field.invalid = Invalid Field!
+operation.not.permitted = Operation Not Permitted!
+invalid.authentication.credentials = Invalid authentication credentials!
+min.length.validation = Field does not contain minimum length of characters!
+max.length.validation = Field exceeds maximum length of characters!
+
+# App Messages
+enter.all.details = Please enter all the details asked!
+user.not.signed.up = User sign up could not be completed!
+enter.user.name = Please enter user name with up to 5 - 50 characters!
+enter.email = Please enter your email!
+enter.password = Please enter a password with up to 5 - 50 characters!
+user.eith.email.already.signed.up = A user with this email id is already signed up!
+user.session.not.created = User session could be created!
+enter.description = Please enter appropriate description for your post! 
+post.could.not.be.created = Post could not be created!
+user.posts.could.not.be.listed = Posts by the given user could not be listed!
