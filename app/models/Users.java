@@ -67,39 +67,49 @@ public class Users extends Model{
 	public Map<String, Object> userSignUpWithRawQuery(final SignUpDTO requestDTO) throws Exception {
 		SqlRow newUser = null;
 		Map<String, Object> signUpResponse = new HashMap<>();
-		// Validate inputs
-		if(requestDTO.userName.isEmpty()) {
-			throw new YmlException(EnumMessages.ENTER_USER_NAME.toString());
-		}
-		if(requestDTO.email.isEmpty()) {
-			throw new YmlException(EnumMessages.ENTER_EMAIL.toString());
-		}
-		String hashedPassword = null;
-		if(requestDTO.password.isEmpty()) {
-			throw new YmlException(EnumMessages.ENTER_PASSWORD.toString());
-		} else {
-			hashedPassword = SecureDigester.digest(requestDTO.password);
-		}
-		// Check if user already exists
-		SqlRow existingUser = findUserByEmailWithRawQuery(requestDTO.email);
-		if(existingUser != null) {
-			throw new YmlException(EnumMessages.USER_WITH_EMAIL_ALREADY_SIGNED_UP.toString());
-		}
-		String query = "INSERT INTO users (user_name,password,email,created_date) VALUES(:user_name,:password,:email,:created_date)";
-		SqlUpdate insertUser = Ebean.createSqlUpdate(query);
-		insertUser.setParameter("user_name", requestDTO.userName).setParameter("password", hashedPassword)
-		.setParameter("email", requestDTO.email).setParameter("created_date", new Date().getTime());
-		int rows = Ebean.execute(insertUser);
+		Ebean.beginTransaction();
 		
-		if(rows > 0) {
-			newUser = findUserByEmailWithRawQuery(requestDTO.email);
-			// Create session for user
-			UserSession userSession = new UserSession();
-			String sessionToken = userSession.createSessionRawQuery(newUser.getLong(ApiResponseKeys.DB_ID.toString()));
-			signUpResponse.put(ApiResponseKeys.USER_ID.toString(), newUser.getString(ApiResponseKeys.DB_ID.toString()));
-			signUpResponse.put(ApiResponseKeys.USER_NAME.toString(), newUser.getString(ApiResponseKeys.DB_USER_NAME.toString()));
-			signUpResponse.put(ApiResponseKeys.EMAIL.toString(), newUser.getString(ApiResponseKeys.DB_EMAIL.toString()));
-			signUpResponse.put(ApiResponseKeys.SESSION_TOKEN.toString(), sessionToken);
+		try{
+			// Validate inputs
+			if(requestDTO.userName.isEmpty()) {
+				throw new YmlException(EnumMessages.ENTER_USER_NAME.toString());
+			}
+			if(requestDTO.email.isEmpty()) {
+				throw new YmlException(EnumMessages.ENTER_EMAIL.toString());
+			}
+			String hashedPassword = null;
+			if(requestDTO.password.isEmpty()) {
+				throw new YmlException(EnumMessages.ENTER_PASSWORD.toString());
+			} else {
+				hashedPassword = SecureDigester.digest(requestDTO.password);
+			}
+			// Check if user already exists
+			SqlRow existingUser = findUserByEmailWithRawQuery(requestDTO.email);
+			if(existingUser != null) {
+				throw new YmlException(EnumMessages.USER_WITH_EMAIL_ALREADY_SIGNED_UP.toString());
+			}
+			String query = "INSERT INTO users (user_name,password,email,created_date) VALUES(:user_name,:password,:email,:created_date)";
+			SqlUpdate insertUser = Ebean.createSqlUpdate(query);
+			insertUser.setParameter("user_name", requestDTO.userName).setParameter("password", hashedPassword)
+			.setParameter("email", requestDTO.email).setParameter("created_date", new Date().getTime());
+			int rows = Ebean.execute(insertUser);
+			
+			if(rows > 0) {
+				newUser = findUserByEmailWithRawQuery(requestDTO.email);
+				// Create session for user
+				UserSession userSession = new UserSession();
+				String sessionToken = userSession.createSessionRawQuery(newUser.getLong(ApiResponseKeys.DB_ID.toString()));
+				signUpResponse.put(ApiResponseKeys.USER_ID.toString(), newUser.getString(ApiResponseKeys.DB_ID.toString()));
+				signUpResponse.put(ApiResponseKeys.USER_NAME.toString(), newUser.getString(ApiResponseKeys.DB_USER_NAME.toString()));
+				signUpResponse.put(ApiResponseKeys.EMAIL.toString(), newUser.getString(ApiResponseKeys.DB_EMAIL.toString()));
+				signUpResponse.put(ApiResponseKeys.SESSION_TOKEN.toString(), sessionToken);
+			}
+			Ebean.commitTransaction();
+		} finally {
+			if (Ebean.currentTransaction() != null) {
+				Ebean.currentTransaction().rollback();
+			}
+
 		}
 		return signUpResponse;
 	}
@@ -120,44 +130,55 @@ public class Users extends Model{
 	 * @throws Exception 
 	 */
 	public Map<String, Object> userSignUp(final SignUpDTO requestDTO) throws Exception {
-		Users newUser = null;
-		// Validate inputs
-		if(requestDTO.userName.isEmpty()) {
-			throw new YmlException(EnumMessages.ENTER_USER_NAME.toString());
-		}
-		if(requestDTO.email.isEmpty()) {
-			throw new YmlException(EnumMessages.ENTER_EMAIL.toString());
-		}
-		String hashedPassword = null;
-		if(requestDTO.password.isEmpty()) {
-			throw new YmlException(EnumMessages.ENTER_PASSWORD.toString());
-		} else {
-			hashedPassword = SecureDigester.digest(requestDTO.password);
-		}
-		// Check if user already exists
-		Users existingUser = findUserByEmail(requestDTO.email);
-		if(existingUser != null) {
-			throw new YmlException(EnumMessages.USER_WITH_EMAIL_ALREADY_SIGNED_UP.toString());
-		}
+		Ebean.beginTransaction();
+		Map<String, Object> signUpResponse = null;
+		try{
+			Users newUser = null;
+			// Validate inputs
+			if(requestDTO.userName.isEmpty()) {
+				throw new YmlException(EnumMessages.ENTER_USER_NAME.toString());
+			}
+			if(requestDTO.email.isEmpty()) {
+				throw new YmlException(EnumMessages.ENTER_EMAIL.toString());
+			}
+			String hashedPassword = null;
+			if(requestDTO.password.isEmpty()) {
+				throw new YmlException(EnumMessages.ENTER_PASSWORD.toString());
+			} else {
+				hashedPassword = SecureDigester.digest(requestDTO.password);
+			}
+			// Check if user already exists
+			Users existingUser = findUserByEmail(requestDTO.email);
+			if(existingUser != null) {
+				throw new YmlException(EnumMessages.USER_WITH_EMAIL_ALREADY_SIGNED_UP.toString());
+			}
 
-		newUser = new Users();
-		newUser.email = requestDTO.email;
-		newUser.userName = requestDTO.userName;
-		newUser.password = hashedPassword;
-		newUser.createdDate = new Date().getTime();
-		Ebean.insert(newUser);
-		
-		// Create session
-		UserSession userSession = new UserSession();
-		String sessionToken = userSession.createSession(newUser);
-		if(sessionToken == null){
-			throw new YmlException(EnumMessages.USER_SESSION_NOT_CREATED.toString());
+			newUser = new Users();
+			newUser.email = requestDTO.email;
+			newUser.userName = requestDTO.userName;
+			newUser.password = hashedPassword;
+			newUser.createdDate = new Date().getTime();
+			Ebean.insert(newUser);
+			
+			// Create session
+			UserSession userSession = new UserSession();
+			String sessionToken = userSession.createSession(newUser);
+			if(sessionToken == null){
+				throw new YmlException(EnumMessages.USER_SESSION_NOT_CREATED.toString());
+			}
+			signUpResponse = new HashMap<>();
+			signUpResponse.put(ApiResponseKeys.USER_ID.toString(), newUser.id);
+			signUpResponse.put(ApiResponseKeys.USER_NAME.toString(), newUser.userName);
+			signUpResponse.put(ApiResponseKeys.EMAIL.toString(), newUser.email);
+			signUpResponse.put(ApiResponseKeys.SESSION_TOKEN.toString(), sessionToken);
+			
+			Ebean.commitTransaction();
+		} finally {
+			if (Ebean.currentTransaction() != null) {
+				Ebean.currentTransaction().rollback();
+			}
 		}
-		Map<String, Object> signUpResponse = new HashMap<>();
-		signUpResponse.put(ApiResponseKeys.USER_ID.toString(), newUser.id);
-		signUpResponse.put(ApiResponseKeys.USER_NAME.toString(), newUser.userName);
-		signUpResponse.put(ApiResponseKeys.EMAIL.toString(), newUser.email);
-		signUpResponse.put(ApiResponseKeys.SESSION_TOKEN.toString(), sessionToken);
+	
 		
 		return signUpResponse;
 	}

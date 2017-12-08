@@ -59,18 +59,27 @@ public class Posts extends Model {
 	 */
 	public Map<String, Long> createPostWithRawQuery(Long userId, String description) {
 		Map<String, Long> response = null;
+		Ebean.beginTransaction();
 		
-		String query = "INSERT INTO posts (user_id,post_description,created_date) VALUES(:user_id,:post_description,:created_date)";
-		SqlUpdate insertPost = Ebean.createSqlUpdate(query);
-		insertPost.setParameter("user_id", userId).setParameter("post_description", description.trim())
-		.setParameter("created_date", new Date().getTime());
-		int rows = Ebean.execute(insertPost);
-		
-		if(rows > 0){
-			response = new HashMap<String, Long>();
-			SqlRow latestPost = findPostByUserIdDescriptionRawQuery(userId,description);
-			response.put(ApiResponseKeys.POST_ID.toString(), latestPost.getLong(ApiResponseKeys.DB_ID.toString())); 
+		try{
+			String query = "INSERT INTO posts (user_id,post_description,created_date) VALUES(:user_id,:post_description,:created_date)";
+			SqlUpdate insertPost = Ebean.createSqlUpdate(query);
+			insertPost.setParameter("user_id", userId).setParameter("post_description", description.trim())
+			.setParameter("created_date", new Date().getTime());
+			int rows = Ebean.execute(insertPost);
+			
+			if(rows > 0){
+				response = new HashMap<String, Long>();
+				SqlRow latestPost = findPostByUserIdDescriptionRawQuery(userId,description);
+				response.put(ApiResponseKeys.POST_ID.toString(), latestPost.getLong(ApiResponseKeys.DB_ID.toString())); 
+			}
+			Ebean.commitTransaction();
+		} finally {
+			if (Ebean.currentTransaction() != null) {
+				Ebean.currentTransaction().rollback();
+			}
 		}
+	
 		
 		return response;
 	}
@@ -126,15 +135,24 @@ public class Posts extends Model {
 	 */
 	public Map<String, Long> createPost(Users user, String description){
 		Map<String, Long> response = null;
+		Ebean.beginTransaction();
 		
-		Posts insertPost = new Posts();
-		insertPost.user = user;
-		insertPost.postDescription = description.trim();
-		insertPost.createdDate = new Date().getTime();
-		Ebean.insert(insertPost);
+		try{
+			Posts insertPost = new Posts();
+			insertPost.user = user;
+			insertPost.postDescription = description.trim();
+			insertPost.createdDate = new Date().getTime();
+			Ebean.insert(insertPost);
+			
+			response = new HashMap<String, Long>();
+			response.put(ApiResponseKeys.POST_ID.toString(), findPostByUserIdDescription(user.id, description).id);
+			Ebean.commitTransaction();
+		} finally {
+			if (Ebean.currentTransaction() != null) {
+				Ebean.currentTransaction().rollback();
+			}
+		}
 		
-		response = new HashMap<String, Long>();
-		response.put(ApiResponseKeys.POST_ID.toString(), findPostByUserIdDescription(user.id, description).id);
 		return response;
 	}
 	
