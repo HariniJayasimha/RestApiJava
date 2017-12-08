@@ -218,5 +218,11 @@ public class UserController extends BaseController {
 		
 		return successResponsePromise(result);
 	}
+	
+	@CorsComposition.Cors
+	public Result testLoaderIO() {
+		return ok("loaderio-f3729088beb005536a895595fa826a74");
+
+	}
 
 }
